@@ -48,14 +48,15 @@ class Cycling extends Workout {
    }
 }
 
-const run1 = new Running();
-const cycling1 = new Cycling();
-console.log(run1, cycling1);
+// const run1 = new Running();
+// const cycling1 = new Cycling();
+// console.log(run1, cycling1);
 
 /////////////////////////////////////////////////////////////////////////
 class App {
    #map;
    #mapEvents;
+   #workouts = [];
    // constructor section
    constructor() {
       this._getposition();
@@ -108,37 +109,48 @@ class App {
    }
    // add new workout method
    _newWorkout(e) {
-      const validateInput = (...inputes) => {
-         console.log(inputes);
-      };
-      validateInput("ali", "behzad", ":reza");
+      const validateInput = (...inputes) => inputes.every((inp) => Number.isFinite(inp));
+      const positiveValue = (...values) => values.every((value) => value > 0);
 
       e.preventDefault();
 
       // get data from form
       const type = inputType.value,
          distance = +inputDistance.value,
-         duration = +inputDuration.value;
+         duration = +inputDuration.value,
+         targetPosition = this.#mapEvents.latlng,
+         { lat, lng } = targetPosition;
+
+      let workout;
 
       // check validation of data
 
       // If workout is Running, create running object
       if (type === "running") {
          const cadence = +inputCadence.value;
-         if (!Number.isFinite(cadence) || !Number.isFinite(distance) || !Number.isFinite(duration))
+         if (
+            !validateInput(distance, duration, cadence) ||
+            !positiveValue(distance, duration, cadence)
+         )
             return alert("Inputs have to be positive number...");
+
+         workout = new Running([lat, lng], distance, duration, cadence);
       }
 
       // If workout is Cycling, create running cycling
       if (type === "cycling") {
          const elevation = +inputElevation.value;
+         if (!validateInput(distance, duration, elevation) || !positiveValue(distance, duration))
+            return alert("Inputs have to be positive number...");
+
+         workout = new Cycling([lat, lng], distance, duration, elevation);
       }
 
       // add new object to array
+      this.#workouts.push(workout);
+      console.log(this.#workouts);
 
       inputDistance.value = inputDuration.value = inputCadence.value = inputElevation.value = "";
-      const targetPosition = this.#mapEvents.latlng;
-      const { lat, lng } = targetPosition;
       L.marker([lat, lng])
          .addTo(this.#map)
          .bindPopup("Walker", {
