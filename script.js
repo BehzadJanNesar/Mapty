@@ -18,13 +18,11 @@ class Workout {
    }
 
    _SetDiscription() {
-      console.log(this.type);
       // prettier-ignore
       const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
       this.discription = `${this.type[0].toUpperCase()}${this.type.slice(1)} on ${
          months[this.date.getMonth()]
       }${this.date.getDate()}`;
-      return this.discription;
    }
 }
 
@@ -61,10 +59,6 @@ class Cycling extends Workout {
    }
 }
 
-// const run1 = new Running();
-// const cycling1 = new Cycling();
-// console.log(run1, cycling1);
-
 /////////////////////////////////////////////////////////////////////////
 class App {
    #map;
@@ -72,6 +66,7 @@ class App {
    #workouts = [];
    // constructor section
    constructor() {
+      this._getDataFromLocalStorage();
       this._getposition();
       form.addEventListener("submit", this._newWorkout.bind(this));
       inputType.addEventListener("change", this._toggleElevationField);
@@ -108,6 +103,9 @@ class App {
          .openPopup();
 
       this.#map.on("click", this._showForm.bind(this));
+      this.#workouts.forEach((item) => {
+         this._renderWorkoutMarker(item);
+      });
    }
    // show form box method
    _showForm(mapE) {
@@ -170,22 +168,21 @@ class App {
 
       // add new object to array
       this.#workouts.push(workout);
-      console.log(this.#workouts);
-
       // render workout on map as marker
       this._renderWorkout(workout);
       this._renderWorkoutMarker(workout);
 
       // hide form and clear inputs value
       this._hideForm();
+
+      // set localStorage data
+      this._setLocalStorageData();
    }
    _renderWorkoutMarker(workout) {
       L.marker(workout.coords)
          .addTo(this.#map)
          .bindPopup(
-            workout.type === "running"
-               ? `🏃‍♂️${workout._SetDiscription()}`
-               : `🚴‍♀️${workout._SetDiscription()}`,
+            workout.type === "running" ? `🏃‍♂️${workout.discription}` : `🚴‍♀️${workout.discription}`,
             {
                maxWidth: 250,
                minWidth: 110,
@@ -199,10 +196,10 @@ class App {
    _renderWorkout(workout) {
       let html = `
          <li class="workout workout--${workout.type}" data-id="${workout.id}">
-            <h2 class="workout__title">${workout._SetDiscription()}</h2>
+            <h2 class="workout__title">${workout.discription}</h2>
             <div class="workout__details">
                <span class="workout__icon">${workout.type === "running" ? "🏃‍♂️" : "🚴‍♀️"}</span>
-               <span class="workout__value">${workout.distance.toFixed(1)}</span>
+               <span class="workout__value">${workout.distance}</span>
                <span class="workout__unit">km</span>
             </div>
             <div class="workout__details">
@@ -230,7 +227,7 @@ class App {
          html += `
           <div class="workout__details">
             <span class="workout__icon">⚡️</span>
-            <span class="workout__value">${workout.speed}</span>
+            <span class="workout__value">${workout.speed.toFixed(1)}</span>
             <span class="workout__unit">km/h</span>
           </div>
           <div class="workout__details">
@@ -249,13 +246,26 @@ class App {
       if (!workoutElemet) return;
 
       const workout = this.#workouts.find((work) => work.id === workoutElemet.dataset.id);
-      console.log(workout);
 
       this.#map.setView(workout.coords, 13, {
          animate: true,
          pan: {
             duration: 1,
          },
+      });
+   }
+
+   _setLocalStorageData() {
+      localStorage.setItem("workouts", JSON.stringify(this.#workouts));
+   }
+   _getDataFromLocalStorage() {
+      const data = JSON.parse(localStorage.getItem("workouts"));
+
+      if (!data) return;
+
+      this.#workouts = data;
+      this.#workouts.forEach((item) => {
+         this._renderWorkout(item);
       });
    }
 }
